@@ -124,7 +124,7 @@
             "publisher": "Canonical",
             "offer": "UbuntuServer",
             "sku": "16.04.0-LTS",
-            "version": "16.04.201612210"
+            "version": "latest"
           },
           "osDisk": {
             "createOption": "FromImage"
