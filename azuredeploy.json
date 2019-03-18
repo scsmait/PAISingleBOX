@@ -27,10 +27,7 @@
     "nicName": "myNic",
     "addressPrefix": "10.0.0.0/16",
     "subnetName": "Subnet",
-    "subnetPrefix": "10.0.0.0/24",
-    "storageAccountType": "Standard_LRS",
     "publicIPAddressName": "myPublicIP",
-    "publicIPAddressType": "Dynamic",
     "vmName": "PAI-SingleBox",
     "vmSize": "Standard_A7",
     "virtualNetworkName": "myVNet",
@@ -43,7 +40,7 @@
       "apiVersion": "2018-07-01",
       "location": "[parameters('location')]",
       "sku": {
-        "name": "[variables('storageAccountType')]"
+        "name": "Standard_LRS"
       },
       "kind": "Storage",
       "properties": {}
@@ -63,7 +60,7 @@
           {
             "name": "[variables('subnetName')]",
             "properties": {
-              "addressPrefix": "[variables('subnetPrefix')]"
+              "addressPrefix": "10.0.0.0/24"
             }
           }
         ]
@@ -101,7 +98,7 @@
       "apiVersion": "2018-10-01",
       "location": "[parameters('location')]",
       "properties": {
-        "publicIPAllocationMethod": "[variables('publicIPAddressType')]"
+        "publicIPAllocationMethod": "Dynamic"
       }
     },
     {
@@ -115,7 +112,7 @@
       ],
       "properties": {
         "hardwareProfile": {
-          "vmSize": "[variables('vmSize')]"
+          "vmSize": "Standard_A7"
         },
         "osProfile": {
           "computerName": "[variables('vmName')]",
@@ -124,9 +121,9 @@
         },
         "storageProfile": {
           "imageReference": {
-            "publisher": "[variables('Canonical')]",
-            "offer": "[variables('UbuntuServer')]",
-            "sku": "[parameters('16.04.0-LTS')]",
+            "publisher": "Canonical",
+            "offer": "UbuntuServer",
+            "sku": "16.04.0-LTS",
             "version": "latest"
           },
           "osDisk": {
