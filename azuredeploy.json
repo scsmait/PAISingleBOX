@@ -30,7 +30,7 @@
     }
   },
   "variables": {
-    "storageAccountName": "[concat(uniquestring(resourceGroup().id), ‘0ubuntu')]",
+    "storageAccountName": "[concat(uniquestring(resourceGroup().id), '0ubuntu')]",
     "imagePublisher": "Canonical",
     "imageOffer": "UbuntuServer",
     "nicName": "myNic",
