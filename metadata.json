@@ -1,9 +1,9 @@
 {
   "$schema": "https://aka.ms/azure-quickstart-templates-metadata-schema#",
   "type": "QuickStart",
-  "itemDisplayName": "Deploy a Ubuntu server for single box deploy",
+  "itemDisplayName": "Deploy a Ubuntu server for single box",
   "icon": "ubuntu",
-  "description": "his template allows you to deploy a Ubuntu server to deploy PAI on another Ubuntu server.",
+  "description": "This template allows you to deploy a PAI on another Ubuntu server.",
   "summary": "This template deploys a Ubuntu 16.04.4-LTS VM.",
   "githubUsername": "scsmait",
   "dateUpdated": "2019-03-20"
