@@ -5,7 +5,7 @@
     "adminUsername": {
       "type": "string",
       "metadata": {
-        "description": "User name for the Virtual Machine."
+        "description": "Username for the Virtual Machine."
       }
     },
     "adminPassword": {
@@ -16,28 +16,60 @@
     },
     "location": {
       "type": "string",
-      "defaultValue": "[resourceGroup().location]",
       "metadata": {
-        "description": "Location for all resources."
+        "description": "The Location For the resources"
+      },
+      "defaultValue": "[resourceGroup().location]"
+    },
+    "vmSize": {
+      "type": "string",
+      "metadata": {
+        "description": "The size of the VM to create"
+      },
+      "defaultValue": "Standard_A7"
+    },
+    "_artifactsLocation": {
+      "type": "string",
+      "metadata": {
+        "description": "The base URI where artifacts required by this template are located. When the template is deployed using the accompanying scripts, a private location in the subscription will be used and this value will be automatically generated."
+      },
+      "defaultValue": "https://raw.githubusercontent.com/scsmait/paideploy/master/"
+    },
+    "_artifactsLocationSasToken": {
+      "type": "securestring",
+      "metadata": {
+        "description": "The sasToken required to access _artifactsLocation."
+      },
+      "defaultValue": ""
+    },
+    "operatingSystem": {
+      "type": "string",
+      "defaultValue": "UbuntuServer_16.04-LTS",
+      "metadata": {
+        "description": "Operating system to use for the virtual machine."
       }
     }
   },
   "variables": {
-    "storageAccountName": "[concat(uniquestring(resourceGroup().id), '0ubuntu')]",
-    "nicName": "myNic",
+    "scriptCommand": "./script.sh",
+    "scriptFile": "script.sh",
+    "vmName": "Pai-SingleBox",
+    "storageAccountName": "[concat(uniquestring(resourceGroup().id), '1ubuntu')]",
+    "networkSecurityGroupName": "nsg",
     "addressPrefix": "10.0.0.0/16",
     "subnetName": "Subnet",
-    "publicIPAddressName": "myPublicIP",
-    "vmName": "PAI-SingleBox",
-    "virtualNetworkName": "myVNet",
-    "subnetRef": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('virtualNetworkName'), variables('subnetName'))]"
+    "subnetPrefix": "10.0.0.0/24",
+    "virtualNetworkName": "vnet",
+    "subnetRef": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('virtualNetworkName'), variables('subnetName'))]",
+    "createVMUrl": "[uri(parameters('_artifactsLocation'), concat('nestedtemplates/vm.json', parameters('_artifactsLocationSasToken')))]",
+    "extensionUrl": "[uri(parameters('_artifactsLocation'), concat('nestedtemplates/customScriptExtension.json', parameters('_artifactsLocationSasToken')))]"
   },
   "resources": [
     {
       "type": "Microsoft.Storage/storageAccounts",
       "name": "[variables('storageAccountName')]",
-      "apiVersion": "2018-07-01",
-      "location": "[parameters('location')]",
+      "apiVersion": "2018-02-01",
+      "location": "[parameters('Location')]",
       "sku": {
         "name": "Standard_LRS"
       },
@@ -45,10 +77,10 @@
       "properties": {}
     },
     {
+      "apiVersion": "2018-07-01",
       "type": "Microsoft.Network/virtualNetworks",
       "name": "[variables('virtualNetworkName')]",
-      "apiVersion": "2018-10-01",
-      "location": "[parameters('location')]",
+      "location": "[parameters('Location')]",
       "properties": {
         "addressSpace": {
           "addressPrefixes": [
@@ -59,97 +91,123 @@
           {
             "name": "[variables('subnetName')]",
             "properties": {
-              "addressPrefix": "10.0.0.0/24"
+              "addressPrefix": "[variables('subnetPrefix')]"
             }
           }
         ]
       }
     },
     {
-      "type": "Microsoft.Network/networkInterfaces",
-      "name": "[variables('nicName')]",
-      "apiVersion": "2018-10-01",
+      "name": "[variables('networkSecurityGroupName')]",
+      "type": "Microsoft.Network/networkSecurityGroups",
+      "apiVersion": "2018-07-01",
       "location": "[parameters('location')]",
-      "dependsOn": [
-        "[resourceId('Microsoft.Network/publicIPAddresses/', variables('publicIPAddressName'))]",
-        "[resourceId('Microsoft.Network/virtualNetworks/', variables('virtualNetworkName'))]"
-      ],
       "properties": {
-        "ipConfigurations": [
+        "securityRules": [
           {
-            "name": "ipconfig1",
+            "name": "allow-remote-access",
             "properties": {
-              "privateIPAllocationMethod": "Dynamic",
-              "publicIPAddress": {
-                "id": "[resourceId('Microsoft.Network/publicIPAddresses',variables('publicIPAddressName'))]"
-              },
-              "subnet": {
-                "id": "[variables('subnetRef')]"
-              }
+              "priority": 1000,
+              "sourceAddressPrefix": "*",
+              "protocol": "Tcp",
+              "destinationPortRange": "22",
+              "access": "Allow",
+              "direction": "Inbound",
+              "sourcePortRange": "*",
+              "destinationAddressPrefix": "*"
             }
           }
         ]
       }
     },
     {
-      "type": "Microsoft.Network/publicIPAddresses",
-      "name": "[variables('publicIPAddressName')]",
-      "apiVersion": "2018-10-01",
-      "location": "[parameters('location')]",
+      "name": "creatingVM",
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2018-05-01",
+      "dependsOn": [
+        "[variables('virtualNetworkName')]",
+        "[variables('storageAccountName')]",
+        "[variables('networkSecurityGroupName')]"
+      ],
       "properties": {
-        "publicIPAllocationMethod": "Dynamic"
+        "mode": "Incremental",
+        "templateLink": {
+          "uri": "[variables('createVMUrl')]",
+          "contentVersion": "1.0.0.0"
+        },
+        "parameters": {
+          "adminPassword": {
+            "value": "[parameters('adminPassword')]"
+          },
+          "adminUsername": {
+            "value": "[parameters('adminUsername')]"
+          },
+          "authenticationType": {
+            "value": "password"
+          },
+          "operatingSystem": {
+            "value": "[parameters('operatingSystem')]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "nsgId": {
+            "value": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('networkSecurityGroupName'))]"
+          },
+          "storageAccountId": {
+            "value": "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]"
+          },
+          "subnetRef": {
+            "value": "[variables('subnetRef')]"
+          },
+          "vmSize": {
+            "value": "[parameters('vmSize')]"
+          },
+          "vmName": {
+            "value": "[variables('vmName')]"
+          }
+        }
       }
     },
     {
-      "type": "Microsoft.Compute/virtualMachines",
-      "name": "[variables('vmName')]",
-      "apiVersion": "2018-10-01",
-      "location": "[parameters('location')]",
+      "name": "executeScript",
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2018-05-01",
       "dependsOn": [
-        "[resourceId('Microsoft.Storage/storageAccounts/', variables('storageAccountName'))]",
-        "[resourceId('Microsoft.Network/networkInterfaces/', variables('nicName'))]"
+        "creatingVM"
       ],
       "properties": {
-        "hardwareProfile": {
-          "vmSize": "Standard_B1s"
+        "mode": "Incremental",
+        "templateLink": {
+          "uri": "[variables('extensionUrl')]",
+          "contentVersion": "1.0.0.0"
         },
-        "osProfile": {
-          "computerName": "[variables('vmName')]",
-          "adminUsername": "[parameters('adminUsername')]",
-          "adminPassword": "[parameters('adminPassword')]"
-        },
-        "storageProfile": {
-          "imageReference": {
-            "publisher": "Canonical",
-            "offer": "UbuntuServer",
-            "sku": "16.04-LTS",
-            "version": "latest"
+        "parameters": {
+          "location": {
+            "value": "[parameters('location')]"
           },
-          "osDisk": {
-            "createOption": "FromImage"
+          "extensionName": {
+            "value": "cse"
           },
-          "dataDisks": [
-            {
-              "diskSizeGB": 20,
-              "lun": 0,
-              "createOption": "Empty"
-            }
-          ]
-        },
-        "networkProfile": {
-          "networkInterfaces": [
-            {
-              "id": "[resourceId('Microsoft.Network/networkInterfaces',variables('nicName'))]"
-            }
-          ]
-        },
-        "diagnosticsProfile": {
-          "bootDiagnostics": {
-            "enabled": true,
-            "storageUri": "[concat(reference(concat('Microsoft.Storage/storageAccounts/', variables('storageAccountName')), '2016-01-01').primaryEndpoints.blob)]"
+          "vmName": {
+            "value": "[variables('vmName')]"
+          },
+          "fileUris": {
+            "value": [
+              "[uri(parameters('_artifactsLocation'), concat(variables('scriptFile'), parameters('_artifactsLocationSasToken')))]"
+            ]
+          },
+          "commandToExecute": {
+            "value": "[variables('scriptCommand')]"
           }
         }
       }
     }
   ],
+  "outputs": {
+    "sample": {
+      "type": "object",
+      "value": "[reference('executeScript').outputs.instanceView.value]"
+    }
+  }
 }
