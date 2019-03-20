@@ -136,7 +136,7 @@
           "imageReference": "[variables('imageReference')[parameters('operatingSystem')]]",
           "dataDisks": [
             {
-              "diskSizeGB": 120,
+              "diskSizeGB": 20,
               "lun": 0,
               "createOption": "Empty"
             }
