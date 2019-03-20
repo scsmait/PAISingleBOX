@@ -6,7 +6,7 @@
 
 # 安装docker
 sudo apt-get update
-sudo apt-get install docker.io
+sudo apt-get -y install docker.io
 # sudo systemctl enable docker.service
 sudo systemctl start docker.service
 
@@ -20,7 +20,8 @@ sudo apt-get update
 sudo apt-get -y install nvidia-container-runtime python
 
 # 打开以下端口访问限制
-# sudo apt-get install iptables-persistent
+sudo apt-get -y install iptables-persistent
 # sudo iptables -I INPUT -p tcp --dport 8080 -j ACCEPT
 # sudo iptables-save
 # sudo netfilter-persistent save
+# sudo netfilter-persistent reload
