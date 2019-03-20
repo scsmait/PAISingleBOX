@@ -24,4 +24,3 @@ sudo apt-get install nvidia-container-runtime python
 # sudo iptables -I INPUT -p tcp --dport 8080 -j ACCEPT
 # sudo iptables-save
 # sudo netfilter-persistent save
-# sudo netfilter-persistent reload
